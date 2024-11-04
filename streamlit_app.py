@@ -1,4 +1,4 @@
-from langchain_core.runnables import RunnableBranch
+from langchain_core.runnables import RunnableBranch, RunnableLambda
 from langchain_core.prompts import PromptTemplate
 from langchain.llms import OpenAI
 import os
@@ -63,12 +63,17 @@ Text:
 """
 ) | llm
 
-# Define the RunnableBranch without a default argument
+# Define the conditions for each branch using RunnableLambda
+is_negative_airline_fault = RunnableLambda(lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower())
+is_negative_not_airline_fault = RunnableLambda(lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower())
+is_positive = RunnableLambda(lambda x: "positive" in x["feedback_type"].lower())
+
+# Define the RunnableBranch without a default argument, using each condition explicitly
 branch = RunnableBranch(
-    (lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower(), negative_airline_fault_chain),
-    (lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower(), negative_not_airline_fault_chain),
-    (lambda x: "positive" in x["feedback_type"].lower(), positive_chain),
-    (lambda x: True, fallback_chain)  # Catch-all branch as a fallback
+    (is_negative_airline_fault, negative_airline_fault_chain),
+    (is_negative_not_airline_fault, negative_not_airline_fault_chain),
+    (is_positive, positive_chain),
+    (RunnableLambda(lambda x: True), fallback_chain)  # Catch-all branch as a fallback
 )
 
 # Streamlit app setup
