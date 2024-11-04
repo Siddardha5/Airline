@@ -12,6 +12,16 @@ llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 #Source: https://www.perplexity.ai/search/import-os-import-streamlit-as-.d.JoOBWRA66L32dUbg9.w?utm_source=backtoschool
 
+feedback_type_template = PromptTemplate.from_template(
+    """You are a professional customer service representative skilled in handling customer issues.
+    From the following text, determine whether the feedback is positive or negative.
+
+    Respond with only one word: "positive" or "negative".
+
+Text:
+{feedback}
+"""
+) | llm
 
 # Define the positive experience chain
 positive_chain = PromptTemplate.from_template(
