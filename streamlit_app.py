@@ -85,11 +85,9 @@ branch = RunnableBranch(
 st.title("Airline Experience Feedback")
 
 # Get user input for feedback
-feedback = st.text_area("Share with us your experience of the latest trip.")
+feedback = st.text_area("Share your experience of the latest trip with us.")
 
 if st.button("Submit"):
-    # Simulate feedback type and fault detection for demonstration
-    # In a real scenario, these would come from a model that detects sentiment and fault type
     feedback_type = "positive" if "good" in feedback.lower() or "great" in feedback.lower() else "negative"
     airline_fault = "airline fault" if "lost luggage" in feedback.lower() or "delay by airline" in feedback.lower() else "not airline fault"
 
