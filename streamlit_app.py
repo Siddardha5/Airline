@@ -11,70 +11,108 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIkey"]
 # Initialize the language model
 llm = OpenAI(openai_api_key=os.environ["OPENAI_API_KEY"])
 
-# Define the template to determine if the trip is international or national
-airline_template = """You are an expert at booking airline tickets.
-From the following text, determine whether the flight type is international or national.
+st.title("Airline Customer Engagement App")
+feedback = st.text_area("Share with us your experience of the latest
+
+# Define the template to detect weather its positive or negative
+
+feedback_type_template = """You are a sentiment analysis expert. 
+From the following text, determine if the experience described is positive or negative.
 
 Do not respond with more than one word.
 
 Text:
-{request}
+{feedback}
+"""
+airline_fault_template = """You are an expert in airline customer service. 
+From the following text, determine if the cause of dissatisfaction is the airline's fault (e.g., lost luggage, flight delay due to staffing issues) or beyond its control (e.g., weather-related delay).
+
+Respond with "airline fault" if the issue is the airline's fault, and "not airline fault" if it is beyond their control.
+
+Text:
+{feedback}
 """
 
-flight_type_chain = (
-    PromptTemplate.from_template(airline_template)
+feedback_type_chain = (
+    PromptTemplate.from_template(feedback_type_template)
     | llm
     | StrOutputParser()
 )
 
-# Define the international chain for visa requirements
-international_chain = PromptTemplate.from_template(
-    """You are a travel agent that is experienced with immigration and visa requirements. \
-Determine the kind of visa the traveller needs for their trip from the following text.
-Do not respond with any reasoning. Just respond professionally as a travel agent. Respond in first-person mode.
-
-Your response should follow these guidelines:
-    1. Do not provide any reasoning behind the need for visa. Just respond professionally as a travel chat agent.
-    2. Address the customer directly
-
-Text:
-{text}
-"""
-) | llm
-
-# Define the general chain for national trips
-general_chain = PromptTemplate.from_template(
-    """You are a travel agent.
-    Given the text below, determine the length of the traveller's journey in hours.
-
-    Your response should follow these guidelines:
-    1. You will wish the traveller a safe trip and that they enjoy the next X hour, where X is the length of their flights.
-    2. Do not respond with any reasoning. Just respond professionally as a travel chat agent.
-    3. Address the customer directly
-
-Text:
-{text}
-"""
-) | llm
-
-# Set up the branching logic
-branch = RunnableBranch(
-    (lambda x: "international" in x["flight_type"].lower(), international_chain),
-    general_chain,
+airline_fault_chain = (
+    PromptTemplate.from_template(airline_fault_template)
+    | llm
+    | StrOutputParser()
 )
 
-# Combine the chains
-full_chain = {"flight_type": flight_type_chain, "text": lambda x: x["request"]} | branch
 
-# Streamlit UI
-st.title("Travel Booking Assistance")
+positive_chain = PromptTemplate.from_template(
+    """You are a professional customer service representative.
+    The customer has shared a positive experience with the airline. Respond professionally, thanking them for their feedback and for choosing to fly with the airline.
 
-# Input from the user
-request_text = st.text_input("Enter your travel details:", "I want to book a 7 day trip to Vienna to visit my cousin there.")
+    Your response should follow these guidelines:
+    1. Address the customer directly and express appreciation for their positive feedback.
+    2. Keep the response warm and professional, encouraging them to choose the airline again in the future.
 
-# Process the input
-if st.button("Check Requirements"):
-    # Run the full chain with the input
-    response = full_chain.invoke({"request": request_text})
+Text:
+{feedback}
+"""
+) | llm
+
+# Define the negative experience chain for issues caused by the airline
+negative_airline_fault_chain = PromptTemplate.from_template(
+    """You are a customer service representative skilled in handling customer grievances.
+    The customer had a negative experience due to an issue caused by the airline (e.g., lost luggage). Offer your sympathies, inform the customer that customer service will reach out soon to resolve the issue or provide compensation.
+
+    Your response should follow these guidelines:
+    1. Address the customer directly and express sincere apologies for the inconvenience.
+    2. Reassure the customer that the airline's customer service team will contact them to resolve the issue or provide compensation.
+    3. Keep the tone empathetic and professional.
+
+Text:
+{feedback}
+"""
+) | llm
+
+# Define the negative experience chain for issues beyond the airline's control
+negative_not_airline_fault_chain = PromptTemplate.from_template(
+    """You are a professional customer service representative.
+    The customer had a negative experience due to an issue beyond the airline's control (e.g., weather-related delays). Offer your sympathies, and explain that the airline is not liable in such situations, but appreciate their understanding.
+
+    Your response should follow these guidelines:
+    1. Address the customer directly and apologize for the inconvenience they experienced.
+    2. Politely explain that the situation was beyond the airline's control, and express appreciation for their understanding.
+    3. Keep the tone empathetic and professional.
+
+Text:
+{feedback}
+"""
+) | llm
+
+# Routing/Branching chain
+branch = RunnableBranch(
+    (lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower(),
+        lambda _: negative_airline_fault_response,
+    ),
+    (lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower(),
+        lambda _: negative_not_airline_fault_response,
+    ),
+    (lambda x: "positive" in x["feedback_type"].lower(),
+        lambda _: positive_response,
+    ),
+)
+
+# Combine chains into the final flow
+if st.button("Submit"):
+    # Pass the feedback through the chains
+    feedback_type = feedback_type_chain.invoke({"feedback": feedback})
+    if "negative" in feedback_type.lower():
+        airline_fault = airline_fault_chain.invoke({"feedback": feedback})
+    else:
+        airline_fault = "none"  # No need to check fault for positive feedback
+    
+    # Branch logic based on feedback_type and airline_fault
+    response = branch.invoke({"feedback_type": feedback_type, "airline_fault": airline_fault})
+    
     # Display the response
-    st.write("Response:", response)
+    st.write(response)
