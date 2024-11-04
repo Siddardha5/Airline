@@ -3,6 +3,7 @@ import streamlit as st
 from langchain_core.runnables import RunnableBranch
 from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI
+from langchain.output_parsers import StrOutputParser
 
 # OpenAI API key from Streamlit secrets
 os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIkey"]
@@ -11,51 +12,62 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIkey"]
 llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Define the sentiment analysis template for determining if feedback is positive or negative
-sentiment_template = PromptTemplate.from_template(
-    """You are a professional customer service representative skilled in handling customer issues.
-    From the following text, determine whether the feedback is positive or negative.
+sentiment_template = """You are a professional customer service representative skilled in handling customer issues.
+From the following text, determine whether the feedback is positive or negative.
 
-    Respond with only one word: "positive" or "negative".
-
-Text:
-{feedback}
-"""
-) | llm
-
-# Define the airline fault detection template for determining if the negative feedback was due to the airline or external factors
-airline_fault_template = PromptTemplate.from_template(
-    """You are a professional customer service representative skilled in handling customer issues.
-    From the following text, determine if the negative experience was caused by the airline (e.g., lost luggage) or by an external factor (e.g., weather-related delay).
-
-    Respond with only one word: "airline fault" or "not airline fault".
+Respond with only one word: "positive" or "negative".
 
 Text:
 {feedback}
 """
-) | llm
+
+# Create the sentiment decision-making chain
+sentiment_chain = (
+    PromptTemplate.from_template(sentiment_template)
+    | llm
+    | StrOutputParser()
+)
 
 # Define the positive experience response chain
 positive_chain = PromptTemplate.from_template(
-    """Thank you for choosing our airline. We're thrilled to hear about your positive experience!
-    We appreciate your feedback and look forward to serving you again.
+    """You are a professional customer service representative.
+    The customer has shared a positive experience with the airline. Respond professionally, thanking them for their feedback and for choosing to fly with the airline.
+
+    Your response should follow these guidelines:
+    1. Address the customer directly and to the point. 
+    2. Appreciate for their positive feedback.
+    3. Do not respond with any reasoning. Just respond professionally as a professional customer service representative.
+    4. Keep the response encouraging and professional, encouraging them to choose the airline again in the future.
 
 Text:
 {feedback}
 """
 ) | llm
 
-# Define the negative experience response chain for issues caused by the airline
+# Define the negative experience chain for issues caused by the airline
 negative_airline_fault_chain = PromptTemplate.from_template(
-    """We’re very sorry for the inconvenience caused by the airline. Our customer service team will contact you soon to resolve the issue or provide compensation.
+    """You are a professional customer service representative skilled in handling customer issues.
+    The customer had a negative experience due to an issue caused by the airline (e.g., lost luggage). Offer your sympathies, inform the customer that customer service will reach out soon to resolve the issue or provide compensation.
+
+    Your response should follow these guidelines:
+    1. Address the customer directly, to the point and express sincere apologies for the inconvenience.
+    2. Reassure the customer that the airline's customer service team will contact them to resolve the issue or provide compensation.
+    3. Keep the tone empathetic and professional.
 
 Text:
 {feedback}
 """
 ) | llm
 
-# Define the negative experience response chain for non-airline issues
+# Define the negative experience chain for issues beyond the airline's control
 negative_not_airline_fault_chain = PromptTemplate.from_template(
-    """We’re sorry to hear about the inconvenience. Unfortunately, this issue was beyond the airline's control. Thank you for your understanding.
+    """You are a professional customer service representative.
+    The customer had a negative experience due to an issue beyond the airline's control (e.g., weather-related delays). Offer your sympathies, and explain that the airline is not liable in such situations, but appreciate their understanding.
+
+    Your response should follow these guidelines:
+    1. Address the customer directly, to the point and apologize for the inconvenience they experienced.
+    2. Politely explain that the situation was beyond the airline's control, and express appreciation for their understanding.
+    3. Keep the tone empathetic and professional.
 
 Text:
 {feedback}
@@ -86,13 +98,26 @@ st.title("Airline Experience Feedback")
 feedback = st.text_area("Share your experience of the latest trip with us.")
 
 if st.button("Submit"):
-    # Use the sentiment template to determine if feedback is positive or negative
-    feedback_type = sentiment_template.invoke({"feedback": feedback}).strip().lower()
+    # Use the sentiment_chain to determine if feedback is positive or negative
+    feedback_type = sentiment_chain.invoke({"feedback": feedback}).strip().lower()
     
     # Use the airline fault template only if feedback is negative
     airline_fault = ""
     if feedback_type == "negative":
-        airline_fault = airline_fault_template.invoke({"feedback": feedback}).strip().lower()
+        airline_fault_template = """You are a professional customer service representative skilled in handling customer issues.
+        From the following text, determine if the negative experience was caused by the airline (e.g., lost luggage) or by an external factor (e.g., weather-related delay).
+
+        Respond with only one word: "airline fault" or "not airline fault".
+
+        Text:
+        {feedback}
+        """
+        airline_fault_chain = (
+            PromptTemplate.from_template(airline_fault_template)
+            | llm
+            | StrOutputParser()
+        )
+        airline_fault = airline_fault_chain.invoke({"feedback": feedback}).strip().lower()
 
     # Get the appropriate response using branching logic
     response = branch.invoke({"feedback_type": feedback_type, "airline_fault": airline_fault, "feedback": feedback})
