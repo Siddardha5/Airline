@@ -54,12 +54,21 @@ Text:
 """
 ) | llm
 
-# Define the RunnableBranch with a default branch in case no conditions are met
+# Define a fallback response chain for cases where none of the conditions match
+fallback_chain = PromptTemplate.from_template(
+    """Thank you for sharing your experience. We value your feedback.
+
+Text:
+{feedback}
+"""
+) | llm
+
+# Define the RunnableBranch without a default argument
 branch = RunnableBranch(
     (lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower(), negative_airline_fault_chain),
     (lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower(), negative_not_airline_fault_chain),
     (lambda x: "positive" in x["feedback_type"].lower(), positive_chain),
-    default=lambda x: "Thank you for sharing your experience. We value your feedback."  # Default response if none of the conditions match
+    (lambda x: True, fallback_chain)  # Catch-all branch as a fallback
 )
 
 # Streamlit app setup
