@@ -21,7 +21,8 @@ positive_chain = PromptTemplate.from_template(
     Your response should follow these guidelines:
     1. Address the customer directly and to the point. 
     2. Appreciate for their positive feedback.
-    3. Keep the response encouraging and professional, encouraging them to choose the airline again in the future.
+    3. Do not respond with any reasoning. Just respond professionally as a professional customer service representative.
+    4. Keep the response encouraging and professional, encouraging them to choose the airline again in the future.
 
 Text:
 {feedback}
@@ -34,7 +35,7 @@ negative_airline_fault_chain = PromptTemplate.from_template(
     The customer had a negative experience due to an issue caused by the airline (e.g., lost luggage). Offer your sympathies, inform the customer that customer service will reach out soon to resolve the issue or provide compensation.
 
     Your response should follow these guidelines:
-    1. Address the customer directly and express sincere apologies for the inconvenience.
+    1. Address the customer directly, to the point and express sincere apologies for the inconvenience.
     2. Reassure the customer that the airline's customer service team will contact them to resolve the issue or provide compensation.
     3. Keep the tone empathetic and professional.
 
@@ -49,7 +50,7 @@ negative_not_airline_fault_chain = PromptTemplate.from_template(
     The customer had a negative experience due to an issue beyond the airline's control (e.g., weather-related delays). Offer your sympathies, and explain that the airline is not liable in such situations, but appreciate their understanding.
 
     Your response should follow these guidelines:
-    1. Address the customer directly and apologize for the inconvenience they experienced.
+    1. Address the customer directly, to the point and apologize for the inconvenience they experienced.
     2. Politely explain that the situation was beyond the airline's control, and express appreciation for their understanding.
     3. Keep the tone empathetic and professional.
 
