@@ -3,6 +3,8 @@ import streamlit as st
 from langchain_core.runnables import RunnableBranch, RunnableLambda
 from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI
+from langchain_core.output_parsers import StrOutputParser
+
 
 # OpenAI API key from Streamlit secrets
 os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIkey"]
@@ -22,6 +24,12 @@ Text:
 {feedback}
 """
 ) | llm
+
+#feedback_type_template = (
+#    PromptTemplate.from_template(sentiment_template)
+#    | llm
+#    | StrOutputParser()
+#)
 
 # Define the positive experience chain
 positive_chain = PromptTemplate.from_template(
@@ -98,6 +106,9 @@ st.title("Airline Experience Feedback")
 feedback = st.text_area("Share your experience of the latest trip with us.")
 
 if st.button("Submit"):
+# Can not able to solve ImportError: cannot import name 'StrOutputParser' from 'langchain.output_parsers' or langchain_core.output_parsers
+#So have to pivot from StrOutputParser to simple if and else decision making chain here
+    
     feedback_type = "positive" if "good" in feedback.lower() or "great" in feedback.lower() else "negative"
     airline_fault = "airline fault" if "lost luggage" in feedback.lower() or "delay by airline" in feedback.lower() else "not airline fault"
 
