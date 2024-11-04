@@ -1,14 +1,15 @@
+import os
 import streamlit as st
 from langchain.llms import OpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import PromptTemplate
 from langchain_core.runnables import RunnableBranch
 
-# Set up your OpenAI API key
-openai_api_key = "your_openai_api_key_here"
+# Set up the OpenAI API key from Streamlit secrets
+os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIkey"]
 
 # Initialize the language model
-llm = OpenAI(openai_api_key=openai_api_key)
+llm = OpenAI(openai_api_key=os.environ["OPENAI_API_KEY"])
 
 # Define the template to determine if the trip is international or national
 airline_template = """You are an expert at booking airline tickets.
