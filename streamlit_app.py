@@ -68,19 +68,12 @@ Text:
 """
 ) | llm
 
-# Define the branches
-#branch = RunnableBranch(
- #   (RunnableLambda(lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower()), negative_airline_fault_chain),
-  #  (RunnableLambda(lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower()), negative_not_airline_fault_chain),
-   # (RunnableLambda(lambda x: "positive" in x["feedback_type"].lower()), positive_chain),
-   # fallback_chain,
-#)
 
 branch = RunnableBranch(
     (lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower(), negative_airline_fault_chain),
     (lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower(), negative_not_airline_fault_chain),
     (lambda x: "positive" in x["feedback_type"].lower(), positive_chain),
-    fallback_chain  # Default branch
+    fallback_chain
 )
 
 #Source: https://api.python.langchain.com/en/latest/_modules/langchain_core/runnables/branch.html
