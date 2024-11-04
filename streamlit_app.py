@@ -1,10 +1,8 @@
 import os
 import streamlit as st
-from langchain_core.runnables import RunnableBranch
+from langchain_core.runnables import RunnableBranch, RunnableLambda
 from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI
-from langchain.output_parsers import StrOutputParser
-from langchain_core.output_parsers import StrOutputParser
 
 # OpenAI API key from Streamlit secrets
 os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIkey"]
@@ -12,24 +10,20 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIkey"]
 # Create the LLM API object
 llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Define the sentiment analysis template for determining if feedback is positive or negative
-sentiment_template = """You are a professional customer service representative skilled in handling customer issues.
-From the following text, determine whether the feedback is positive or negative.
+#Source: https://www.perplexity.ai/search/import-os-import-streamlit-as-.d.JoOBWRA66L32dUbg9.w?utm_source=backtoschool
 
-Respond with only one word: "positive" or "negative".
+feedback_type_template = PromptTemplate.from_template(
+    """You are a professional customer service representative skilled in handling customer issues.
+    From the following text, determine whether the feedback is positive or negative.
+
+    Respond with only one word: "positive" or "negative".
 
 Text:
 {feedback}
 """
+) | llm
 
-# Create the sentiment decision-making chain
-sentiment_chain = (
-    PromptTemplate.from_template(sentiment_template)
-    | llm
-    | StrOutputParser()
-)
-
-# Define the positive experience response chain
+# Define the positive experience chain
 positive_chain = PromptTemplate.from_template(
     """You are a professional customer service representative.
     The customer has shared a positive experience with the airline. Respond professionally, thanking them for their feedback and for choosing to fly with the airline.
@@ -84,13 +78,18 @@ Text:
 """
 ) | llm
 
-# Define branching logic based on sentiment and fault detection
+
 branch = RunnableBranch(
-    (lambda x: x["feedback_type"] == "negative" and x["airline_fault"] == "airline fault", negative_airline_fault_chain),
-    (lambda x: x["feedback_type"] == "negative" and x["airline_fault"] == "not airline fault", negative_not_airline_fault_chain),
-    (lambda x: x["feedback_type"] == "positive", positive_chain),
+    (lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower(), negative_airline_fault_chain),
+    (lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower(), negative_not_airline_fault_chain),
+    (lambda x: "positive" in x["feedback_type"].lower(), positive_chain),
     general_chain
 )
+
+#Source: https://api.python.langchain.com/en/latest/_modules/langchain_core/runnables/branch.html
+#Source: https://api.python.langchain.com/en/latest/runnables/langchain_core.runnables.branch.RunnableBranch.html
+#Source: https://python.langchain.com/v0.1/docs/expression_language/primitives/functions/
+
 
 # Streamlit app setup
 st.title("Airline Experience Feedback")
@@ -99,26 +98,8 @@ st.title("Airline Experience Feedback")
 feedback = st.text_area("Share your experience of the latest trip with us.")
 
 if st.button("Submit"):
-    # Use the sentiment_chain to determine if feedback is positive or negative
-    feedback_type = sentiment_chain.invoke({"feedback": feedback}).strip().lower()
-    
-    # Use the airline fault template only if feedback is negative
-    airline_fault = ""
-    if feedback_type == "negative":
-        airline_fault_template = """You are a professional customer service representative skilled in handling customer issues.
-        From the following text, determine if the negative experience was caused by the airline (e.g., lost luggage) or by an external factor (e.g., weather-related delay).
-
-        Respond with only one word: "airline fault" or "not airline fault".
-
-        Text:
-        {feedback}
-        """
-        airline_fault_chain = (
-            PromptTemplate.from_template(airline_fault_template)
-            | llm
-            | StrOutputParser()
-        )
-        airline_fault = airline_fault_chain.invoke({"feedback": feedback}).strip().lower()
+    feedback_type = "positive" if "good" in feedback.lower() or "great" in feedback.lower() else "negative"
+    airline_fault = "airline fault" if "lost luggage" in feedback.lower() or "delay by airline" in feedback.lower() else "not airline fault"
 
     # Get the appropriate response using branching logic
     response = branch.invoke({"feedback_type": feedback_type, "airline_fault": airline_fault, "feedback": feedback})
