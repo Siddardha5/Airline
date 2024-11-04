@@ -69,8 +69,8 @@ branch = RunnableBranch(
         (lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower(), negative_airline_fault_chain),
         (lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower(), negative_not_airline_fault_chain),
         (lambda x: "positive" in x["feedback_type"].lower(), positive_chain),
-    ],
-    default=fallback_chain  # Fallback chain for unmatched cases
+        (lambda x: True, fallback_chain)  # Catch-all fallback condition
+    ]
 )
 
 # Streamlit app setup
