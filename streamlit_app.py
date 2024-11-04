@@ -77,7 +77,7 @@ Text:
 """
 ) | llm
 
-# Define a fallback response chain for cases where none of the conditions match
+
 general_chain = PromptTemplate.from_template(
     """Thank you for sharing your experience. We value your feedback.
 
@@ -107,12 +107,11 @@ feedback = st.text_area("Share your experience of the latest trip with us.")
 
 if st.button("Submit"):
 # Can not able to solve ImportError: cannot import name 'StrOutputParser' from 'langchain.output_parsers' or langchain_core.output_parsers
-#So have to pivot from StrOutputParser to simple if and else decision making chain here
+#So have to pivot from StrOutputParser to simple if and else decision making chain as below
     
     feedback_type = "positive" if "good" in feedback.lower() or "great" in feedback.lower() else "negative"
     airline_fault = "airline fault" if "lost luggage" in feedback.lower() or "delay by airline" in feedback.lower() else "not airline fault"
 
-    # Get the appropriate response using branching logic
     response = branch.invoke({"feedback_type": feedback_type, "airline_fault": airline_fault, "feedback": feedback})
 
     # Display the response
