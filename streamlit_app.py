@@ -12,7 +12,7 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIkey"]
 llm = OpenAI(openai_api_key=os.environ["OPENAI_API_KEY"])
 
 st.title("Airline Customer Engagement App")
-feedback = st.text_area("Share with us your experience of the latest
+feedback = st.text_area("Share with us your experience of the latest trip.")
 
 # Define the template to detect weather its positive or negative
 
