@@ -4,11 +4,14 @@ from langchain_core.runnables import RunnableBranch, RunnableLambda
 from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI
 
-# Set OpenAI API key from Streamlit secrets
+# OpenAI API key from Streamlit secrets
 os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIkey"]
 
-# Define the LLM API object
+# Create the LLM API object
 llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+#Source: https://www.perplexity.ai/search/import-os-import-streamlit-as-.d.JoOBWRA66L32dUbg9.w?utm_source=backtoschool
+
 
 # Define the positive experience chain
 positive_chain = PromptTemplate.from_template(
@@ -16,8 +19,9 @@ positive_chain = PromptTemplate.from_template(
     The customer has shared a positive experience with the airline. Respond professionally, thanking them for their feedback and for choosing to fly with the airline.
 
     Your response should follow these guidelines:
-    1. Address the customer directly and appreciate for their positive feedback.
-    2. Keep the response encouraging and professional, encouraging them to choose the airline again in the future.
+    1. Address the customer directly and to the point. 
+    2. Appreciate for their positive feedback.
+    3. Keep the response encouraging and professional, encouraging them to choose the airline again in the future.
 
 Text:
 {feedback}
@@ -65,11 +69,16 @@ Text:
 
 # Define the branches
 branch = RunnableBranch(
-    (RunnableLambda(lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower()), negative_airline_fault_chain),
-    (RunnableLambda(lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower()), negative_not_airline_fault_chain),
-    (RunnableLambda(lambda x: "positive" in x["feedback_type"].lower()), positive_chain),
+    (lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower()), negative_airline_fault_chain),
+    (lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower()), negative_not_airline_fault_chain),
+    (lambda x: "positive" in x["feedback_type"].lower()), positive_chain),
     fallback_chain  # Default branch as fallback
 )
+
+#Source: https://api.python.langchain.com/en/latest/_modules/langchain_core/runnables/branch.html
+#Source: https://api.python.langchain.com/en/latest/runnables/langchain_core.runnables.branch.RunnableBranch.html
+#Source: https://python.langchain.com/v0.1/docs/expression_language/primitives/functions/
+
 
 # Streamlit app setup
 st.title("Airline Experience Feedback")
@@ -88,3 +97,4 @@ if st.button("Submit"):
 
     # Display the response
     st.write(response)
+
