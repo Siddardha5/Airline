@@ -31,7 +31,7 @@ Text:
 
 # Define the negative experience chain for issues caused by the airline
 negative_airline_fault_chain = PromptTemplate.from_template(
-    """You are a customer service representative skilled in handling customer issues.
+    """You are a professional customer service representative skilled in handling customer issues.
     The customer had a negative experience due to an issue caused by the airline (e.g., lost luggage). Offer your sympathies, inform the customer that customer service will reach out soon to resolve the issue or provide compensation.
 
     Your response should follow these guidelines:
@@ -60,20 +60,20 @@ Text:
 ) | llm
 
 # Define a fallback response chain for cases where none of the conditions match
-fallback_chain = PromptTemplate.from_template(
-    """Thank you for sharing your experience. We value your feedback.
+#fallback_chain = PromptTemplate.from_template(
+ #   """Thank you for sharing your experience. We value your feedback.
 
-Text:
-{feedback}
-"""
-) | llm
+#Text:
+#{feedback}
+#"""
+#) | llm
 
 
 branch = RunnableBranch(
     (lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower(), negative_airline_fault_chain),
     (lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower(), negative_not_airline_fault_chain),
     (lambda x: "positive" in x["feedback_type"].lower(), positive_chain),
-    fallback_chain
+   # fallback_chain
 )
 
 #Source: https://api.python.langchain.com/en/latest/_modules/langchain_core/runnables/branch.html
