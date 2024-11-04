@@ -4,6 +4,7 @@ from langchain_core.runnables import RunnableBranch
 from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI
 from langchain.output_parsers import StrOutputParser
+from langchain_core.output_parsers import StrOutputParser
 
 # OpenAI API key from Streamlit secrets
 os.environ["OPENAI_API_KEY"] = st.secrets["OpenAIkey"]
