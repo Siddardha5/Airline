@@ -60,20 +60,20 @@ Text:
 ) | llm
 
 # Define a fallback response chain for cases where none of the conditions match
-#fallback_chain = PromptTemplate.from_template(
- #   """Thank you for sharing your experience. We value your feedback.
+general_chain = PromptTemplate.from_template(
+    """Thank you for sharing your experience. We value your feedback.
 
-#Text:
-#{feedback}
-#"""
-#) | llm
+Text:
+{feedback}
+"""
+) | llm
 
 
 branch = RunnableBranch(
     (lambda x: "negative" in x["feedback_type"].lower() and "airline fault" in x["airline_fault"].lower(), negative_airline_fault_chain),
     (lambda x: "negative" in x["feedback_type"].lower() and "not airline fault" in x["airline_fault"].lower(), negative_not_airline_fault_chain),
     (lambda x: "positive" in x["feedback_type"].lower(), positive_chain),
-   # fallback_chain
+    general_chain
 )
 
 #Source: https://api.python.langchain.com/en/latest/_modules/langchain_core/runnables/branch.html
